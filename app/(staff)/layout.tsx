@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import SignOutButton from "@/components/auth/SignOutButton";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -16,12 +17,16 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     .single();
 
   if (!profile || !["staff", "admin"].includes(profile.role)) {
-    redirect("/portal");
+    redirect("/login");
   }
 
   return (
     <div>
-      {/* Staff nav: Today, Calendar, Clients */}
+      <nav className="flex items-center justify-between border-b px-6 py-3">
+        {/* TODO: Today, Calendar, Clients links */}
+        <span className="font-medium">Clinic Dashboard</span>
+        <SignOutButton />
+      </nav>
       <main>{children}</main>
     </div>
   );

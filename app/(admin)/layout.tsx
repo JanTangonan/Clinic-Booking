@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import SignOutButton from "@/components/auth/SignOutButton";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -19,7 +20,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div>
-      {/* Admin nav: Services, Staff, Payments, Settings */}
+      <nav className="flex items-center justify-between border-b px-6 py-3">
+        {/* TODO: Services, Staff, Payments, Settings links */}
+        <span className="font-medium">Admin</span>
+        <SignOutButton />
+      </nav>
       <main>{children}</main>
     </div>
   );
