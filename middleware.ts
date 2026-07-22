@@ -4,8 +4,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 // Path prefix -> roles allowed to access it.
 // Anything not listed here (marketing pages, /book, /login, /signup,
 // /services) is public and falls through untouched.
-const PROTECTED_ROUTES: { prefix: string; roles: Array<"client" | "staff" | "admin"> }[] = [
-  { prefix: "/portal", roles: ["client", "staff", "admin"] }, // any logged-in user
+const PROTECTED_ROUTES: { prefix: string; roles: Array<"staff" | "admin"> }[] = [
   { prefix: "/dashboard", roles: ["staff", "admin"] },
   { prefix: "/admin", roles: ["admin"] },
 ];
@@ -39,11 +38,10 @@ export async function middleware(request: NextRequest) {
   const role = profile?.role;
 
   if (!role || !matched.roles.includes(role)) {
-    // Logged in, but wrong role for this area — send them to their own
-    // home rather than a bare 403, since a client hitting /dashboard is
-    // more likely confused than malicious.
-    const fallback = role === "admin" || role === "staff" ? "/dashboard" : "/portal";
-    return NextResponse.redirect(new URL(fallback, request.url));
+    // Only staff/admin can ever log in at all, so landing here means
+    // a staff member hit an admin-only route — send them back to their
+    // own dashboard rather than a bare 403.
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return response;
