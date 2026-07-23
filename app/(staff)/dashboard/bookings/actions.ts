@@ -1,0 +1,116 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+
+type CreateBookingInput = {
+  client_id: string;
+  staff_id: string;
+  service_id: string;
+  start_time: string; // ISO
+};
+
+export async function createBooking(input: CreateBookingInput) {
+  const supabase = await createClient();
+
+  const { data: service, error: serviceErr } = await supabase
+    .from("services")
+    .select("duration_minutes")
+    .eq("id", input.service_id)
+    .single();
+
+  if (serviceErr || !service) {
+    return { error: "Could not load service details." };
+  }
+
+  const start = new Date(input.start_time);
+  const end = new Date(start.getTime() + service.duration_minutes * 60_000);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .insert({
+      client_id: input.client_id,
+      staff_id: input.staff_id,
+      service_id: input.service_id,
+      created_by: user?.id,
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      status: "confirmed",
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    // Postgres code 23P01 = exclusion_violation — this fires if someone
+    // else booked the same staff/time between the availability check
+    // and this insert. The UI showed a "free" slot, but the database
+    // is the actual source of truth, so we surface this as a normal
+    // recoverable error rather than a crash.
+    if (error.code === "23P01") {
+      return { error: "That time slot was just taken by another booking. Please pick a different time." };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath(`/dashboard/clients/${input.client_id}`);
+  redirect(`/dashboard/bookings/${data.id}`);
+}
+
+export type CancellationReason =
+  | "client_request"
+  | "rescheduled"
+  | "staff_unavailable"
+  | "clinic_closed"
+  | "no_show"
+  | "other";
+
+export async function cancelBooking(input: {
+  booking_id: string;
+  reason: CancellationReason;
+  note?: string;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // 'no_show' gets its own status (distinct from a normal cancellation)
+  // so reporting can separate "client cancelled ahead of time" from
+  // "client just didn't show up" — these usually drive different
+  // policy decisions (e.g. requiring deposits going forward).
+  const status = input.reason === "no_show" ? "no_show" : "cancelled";
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({
+      status,
+      cancellation_reason: input.reason,
+      cancellation_note: input.note || null,
+      cancelled_by: user?.id,
+      cancelled_at: new Date().toISOString(),
+    })
+    .eq("id", input.booking_id)
+    .select("client_id")
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase.from("audit_log").insert({
+    actor_id: user?.id,
+    action: `booking_${status}`,
+    target_table: "bookings",
+    target_id: input.booking_id,
+  });
+
+  revalidatePath(`/dashboard/bookings/${input.booking_id}`);
+  revalidatePath(`/dashboard/clients/${data.client_id}`);
+
+  return { success: true };
+}
