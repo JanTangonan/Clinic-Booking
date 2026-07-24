@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateStaffDetails } from "../actions";
+import { updateStaffDetails } from "../../actions";
 
 type WorkingHours = Record<string, [string, string] | null>;
 
