@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { todayInClinicTZ } from "@/lib/date";
 import CalendarGrid from "./CalendarGrid";
 
 export default async function CalendarPage({
@@ -7,7 +8,7 @@ export default async function CalendarPage({
   searchParams: Promise<{ date?: string }>;
 }) {
   const { date: dateParam } = await searchParams;
-  const date = dateParam || new Date().toISOString().slice(0, 10);
+  const date = dateParam || todayInClinicTZ();
 
   const supabase = await createClient();
 
@@ -27,18 +28,8 @@ export default async function CalendarPage({
     .order("start_time");
 
   return (
-    <div className="mx-auto max-w-7xl p-6 sm:p-8">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Daily schedule
-          </p>
-          <h1 className="text-2xl font-semibold text-slate-900">Calendar</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Review appointments by staff and jump straight into any booking.
-          </p>
-        </div>
-      </div>
+    <div className="p-8">
+      <h1 className="text-2xl font-semibold mb-4">Calendar</h1>
       <CalendarGrid date={date} staff={staff || []} bookings={bookings || []} />
     </div>
   );

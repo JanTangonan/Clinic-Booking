@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { shiftDate, todayInClinicTZ } from "@/lib/date";
 
 type StaffMember = {
   id: string;
@@ -31,18 +32,12 @@ function toMinutes(hhmm: string) {
   return h * 60 + m;
 }
 
-function shiftDate(date: string, days: number) {
-  const d = new Date(`${date}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 const STATUS_STYLE: Record<string, string> = {
-  pending: "bg-amber-50 border-amber-300 text-amber-900",
-  confirmed: "bg-sky-50 border-sky-300 text-sky-900",
-  completed: "bg-slate-100 border-slate-300 text-slate-700",
-  cancelled: "bg-rose-50 border-rose-200 text-rose-700 line-through",
-  no_show: "bg-rose-50 border-rose-200 text-rose-700 line-through",
+  pending: "bg-amber-100 border-amber-400 text-amber-900",
+  confirmed: "bg-blue-100 border-blue-400 text-blue-900",
+  completed: "bg-gray-100 border-gray-400 text-gray-700",
+  cancelled: "bg-red-50 border-red-200 text-red-400 line-through",
+  no_show: "bg-red-50 border-red-200 text-red-400 line-through",
 };
 
 export default function CalendarGrid({
@@ -65,11 +60,9 @@ export default function CalendarGrid({
 
   if (workingStaff.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div>
         <DateNav date={date} onNavigate={goToDate} />
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-600">
-          No staff are scheduled to work on this day.
-        </div>
+        <p className="text-gray-500 text-sm mt-6">No staff scheduled to work this day.</p>
       </div>
     );
   }
@@ -92,26 +85,28 @@ export default function CalendarGrid({
   });
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <div>
       <DateNav date={date} onNavigate={goToDate} />
 
-      <div className="mt-5 overflow-x-auto">
+      <div className="mt-6 overflow-x-auto">
         <div
-          className="grid rounded-xl border border-slate-200 bg-slate-50"
-          style={{ gridTemplateColumns: `90px repeat(${workingStaff.length}, minmax(180px, 1fr))` }}
+          className="grid border-t border-l"
+          style={{ gridTemplateColumns: `80px repeat(${workingStaff.length}, minmax(160px, 1fr))` }}
         >
-          <div className="border-b border-r border-slate-200 bg-white" />
+          {/* Header row */}
+          <div className="border-b border-r bg-gray-50" />
           {workingStaff.map((s) => (
-            <div key={s.id} className="border-b border-r border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-800">
+            <div key={s.id} className="border-b border-r bg-gray-50 px-2 py-2 text-sm font-medium">
               {singularize(s.profiles)?.full_name ?? "Staff"}
             </div>
           ))}
 
-          <div className="relative border-r border-slate-200 bg-white" style={{ height: totalSlots * SLOT_PX }}>
+          {/* Time labels column */}
+          <div className="relative border-r" style={{ height: totalSlots * SLOT_PX }}>
             {timeLabels.map((label, i) => (
               <div
                 key={label}
-                className="absolute right-2 -translate-y-1/2 text-[11px] text-slate-400"
+                className="absolute right-2 -translate-y-1/2 text-xs text-gray-400"
                 style={{ top: i * SLOT_PX }}
               >
                 {i % 2 === 0 ? label : ""}
@@ -119,6 +114,7 @@ export default function CalendarGrid({
             ))}
           </div>
 
+          {/* Staff columns */}
           {workingStaff.map((s) => {
             const [openStr, closeStr] = s.working_hours[dayKey]!;
             const staffOpen = toMinutes(openStr);
@@ -126,19 +122,21 @@ export default function CalendarGrid({
             const staffBookings = bookings.filter((b) => b.staff_id === s.id);
 
             return (
-              <div key={s.id} className="relative border-r border-slate-200 bg-white" style={{ height: totalSlots * SLOT_PX }}>
+              <div key={s.id} className="relative border-r" style={{ height: totalSlots * SLOT_PX }}>
+                {/* Background rows, dimmed outside this staff member's shift */}
                 {Array.from({ length: totalSlots }, (_, i) => {
                   const rowStart = gridStart + i * SLOT_MIN;
                   const outsideShift = rowStart < staffOpen || rowStart >= staffClose;
                   return (
                     <div
                       key={i}
-                      className={`absolute w-full border-b border-slate-100 ${outsideShift ? "bg-slate-50" : "bg-white"}`}
+                      className={`absolute w-full border-b ${outsideShift ? "bg-gray-50" : ""}`}
                       style={{ top: i * SLOT_PX, height: SLOT_PX }}
                     />
                   );
                 })}
 
+                {/* Booking blocks */}
                 {staffBookings.map((b) => {
                   const start = new Date(b.start_time);
                   const end = new Date(b.end_time);
@@ -154,10 +152,10 @@ export default function CalendarGrid({
                     <button
                       key={b.id}
                       onClick={() => router.push(`/dashboard/bookings/${b.id}`)}
-                      className={`absolute left-1 right-1 overflow-hidden rounded-lg border px-2 py-1.5 text-left text-[11px] shadow-sm transition hover:shadow-md ${STATUS_STYLE[b.status] ?? "bg-slate-100 border-slate-300"}`}
+                      className={`absolute left-1 right-1 rounded border px-2 py-1 text-left text-xs overflow-hidden ${STATUS_STYLE[b.status] ?? "bg-gray-100 border-gray-300"}`}
                       style={{ top, height }}
                     >
-                      <p className="truncate font-semibold">{client?.full_name}</p>
+                      <p className="font-medium truncate">{client?.full_name}</p>
                       <p className="truncate">{service?.name}</p>
                     </button>
                   );
@@ -172,47 +170,40 @@ export default function CalendarGrid({
 }
 
 function DateNav({ date, onNavigate }: { date: string; onNavigate: (d: string) => void }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInClinicTZ();
   const displayDate = new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
     weekday: "long",
     month: "long",
     day: "numeric",
-    year: "numeric",
   });
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-sm font-semibold text-slate-900">{displayDate}</p>
-        <p className="text-sm text-slate-500">Navigate through the day’s appointments</p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => onNavigate(shiftDate(date, -1))}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
-        >
-          ← Previous
-        </button>
-        <button
-          onClick={() => onNavigate(today)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
-        >
-          Today
-        </button>
-        <button
-          onClick={() => onNavigate(shiftDate(date, 1))}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
-        >
-          Next →
-        </button>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => onNavigate(e.target.value)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700"
-        />
-      </div>
+    <div className="flex items-center gap-3">
+      <button
+        onClick={() => onNavigate(shiftDate(date, -1))}
+        className="rounded border border-gray-300 px-2 py-1 text-sm"
+      >
+        ←
+      </button>
+      <button
+        onClick={() => onNavigate(today)}
+        className="rounded border border-gray-300 px-3 py-1 text-sm"
+      >
+        Today
+      </button>
+      <button
+        onClick={() => onNavigate(shiftDate(date, 1))}
+        className="rounded border border-gray-300 px-2 py-1 text-sm"
+      >
+        →
+      </button>
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => onNavigate(e.target.value)}
+        className="rounded border border-gray-300 px-2 py-1 text-sm"
+      />
+      <span className="text-gray-500 text-sm ml-2">{displayDate}</span>
     </div>
   );
 }

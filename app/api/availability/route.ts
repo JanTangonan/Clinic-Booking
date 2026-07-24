@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-const SLOT_INCREMENT_MIN = 15;
+const SLOT_INCREMENT_MIN = 60;
+
+const LUNCH_START_HOUR = 12;
+const LUNCH_END_HOUR = 13;
 
 // GET /api/availability?staff_id=...&service_id=...&date=YYYY-MM-DD
 // Returns { slots: string[] } — ISO start times the staff member is
@@ -54,6 +57,9 @@ export async function GET(request: NextRequest) {
   const dayEnd = new Date(`${dateStr}T${closeStr}:00`);
   const durationMs = service.duration_minutes * 60_000;
 
+  const lunchStart = new Date(`${dateStr}T12:00:00`);
+  const lunchEnd = new Date(`${dateStr}T13:00:00`);
+
   const { data: existing } = await supabase
     .from("bookings")
     .select("start_time, end_time")
@@ -78,6 +84,13 @@ export async function GET(request: NextRequest) {
     if (t < now) continue; // don't offer times already in the past today
 
     const slotEnd = t + durationMs;
+
+    const overlapsLunch =
+      t < lunchEnd.getTime() &&
+      slotEnd > lunchStart.getTime();
+
+    if (overlapsLunch) continue;
+
     const overlapsExisting = busy.some((b) => t < b.end && slotEnd > b.start);
     if (!overlapsExisting) slots.push(new Date(t).toISOString());
   }
