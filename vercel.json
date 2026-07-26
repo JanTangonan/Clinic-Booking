@@ -3,6 +3,10 @@
     {
       "path": "/api/reminders",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/bookings/auto-complete",
+      "schedule": "0 * * * *"
     }
   ]
 }
