@@ -12,6 +12,14 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+const STATUS_STYLE: Record<string, string> = {
+  pending: "bg-amber-100 border-amber-400 text-amber-900",
+  confirmed: "bg-blue-100 border-blue-400 text-blue-900",
+  completed: "bg-green-100 border-green-400 text-green-700",
+  cancelled: "bg-red-50 border-red-200 text-red-400 line-through",
+  no_show: "bg-red-50 border-red-200 text-red-400 line-through",
+};
+
 export default async function ClientDetailPage({
   params,
 }: {
@@ -106,7 +114,7 @@ export default async function ClientDetailPage({
                       <p className="font-medium text-slate-900">{b.services?.name || "Appointment"}</p>
                       <p className="text-sm text-slate-500">{formatDateTime(b.start_time)}</p>
                     </div>
-                    <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-sm capitalize text-slate-600">
+                    <span className={`inline-flex w-fit rounded-full px-3 py-1 text-sm capitalize ${STATUS_STYLE[b.status] ?? "bg-gray-100 border-gray-300 text-gray-700"}`}>
                       {b.status}
                     </span>
                   </Link>

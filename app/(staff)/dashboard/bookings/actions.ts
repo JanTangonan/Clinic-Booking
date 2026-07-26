@@ -114,3 +114,38 @@ export async function cancelBooking(input: {
 
   return { success: true };
 }
+
+export async function markBookingCompleted(bookingId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      completed_by: user?.id,
+    })
+    .eq("id", bookingId)
+    .select("client_id")
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase.from("audit_log").insert({
+    actor_id: user?.id,
+    action: "booking_completed",
+    target_table: "bookings",
+    target_id: bookingId,
+  });
+
+  revalidatePath(`/dashboard/bookings/${bookingId}`);
+  revalidatePath(`/dashboard/clients/${data.client_id}`);
+  revalidatePath("/dashboard/calendar");
+
+  return { success: true };
+}

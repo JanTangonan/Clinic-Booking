@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CancelBookingForm from "./CancelBookingForm";
+import CompleteBookingButton from "./CompleteBookingButton";
 
 export default async function BookingDetailPage({
   params,
@@ -14,36 +15,28 @@ export default async function BookingDetailPage({
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, start_time, status, cancellation_reason, cancellation_note, cancelled_at, clients(id, full_name, phone), services(name, price), staff_details(profiles(full_name))"
+      "id, start_time, status, cancellation_reason, cancellation_note, cancelled_at, completed_at, clients(id, full_name, phone), services(name, price), staff_details(profiles(full_name))"
     )
     .eq("id", id)
     .single();
 
   if (!booking) notFound();
 
-  const client = booking.clients as unknown as {
-    id: string;
-    full_name: string;
-    phone: string | null;
-  };
+  const client = booking.clients as unknown as { id: string; full_name: string; phone: string | null; };
   const service = booking.services as unknown as { name: string; price: number };
   const staffProfile = (booking.staff_details as unknown as { profiles: { full_name: string } })?.profiles;
 
   const isCancelled = booking.status === "cancelled" || booking.status === "no_show";
   const canCancel = booking.status === "pending" || booking.status === "confirmed";
+
   const bookingDate = new Date(booking.start_time);
-  const formattedDate = new Intl.DateTimeFormat("en", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(bookingDate);
+  const formattedDate = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", }).format(bookingDate);
+
   const statusLabel = booking.status.replace("_", " ");
-  const statusClasses = isCancelled
-    ? "border-rose-200 bg-rose-50 text-rose-700"
-    : "border-emerald-200 bg-emerald-50 text-emerald-700";
+  const statusClasses = isCancelled ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700";
+
+  const isCompleted = booking.status === "completed";
+  const isActionable = booking.status === "pending" || booking.status === "confirmed";
 
   return (
     <div className="mx-auto max-w-4xl p-6 sm:p-8">
@@ -53,7 +46,7 @@ export default async function BookingDetailPage({
             Booking details
           </p>
           <h1 className="text-2xl font-semibold text-slate-900">
-            {isCancelled ? "Booking cancelled" : "Booking confirmed"}
+            {isCancelled ? "Booking cancelled" : isCompleted ? "Booking completed" : "Booking confirmed"}
           </h1>
           <p className="mt-1 text-sm text-slate-600">
             Review the appointment details and manage the booking from one place.
@@ -142,6 +135,21 @@ export default async function BookingDetailPage({
               Cancelled on {new Date(booking.cancelled_at).toLocaleString()}
             </p>
           )}
+        </div>
+      )}
+
+      {isCompleted && booking.completed_at && (
+        <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-5 text-sm text-green-900">
+          <p className="font-semibold">Completion details</p>
+          <p className="mt-3 text-xs text-green-700">
+            Completed {new Date(booking.completed_at).toLocaleString()}
+          </p>
+        </div>
+      )}
+
+      {isActionable && (
+        <div className="flex items-center gap-4">
+          <CompleteBookingButton bookingId={booking.id} />
         </div>
       )}
 

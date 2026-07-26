@@ -8,6 +8,10 @@ function singularize<T>(v: T | T[] | null | undefined): T | null {
   return Array.isArray(v) ? v[0] ?? null : v ?? null;
 }
 
+// TODO: re-enable once you're ready to add email — this function is
+// intentionally unused right now (SMS-only for the initial rollout).
+// Kept here so wiring it back in is a one-line change in the loop
+// below, not a rewrite.
 async function sendEmail(to: string, subject: string, html: string) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -99,14 +103,15 @@ export async function GET(request: NextRequest) {
 
       const messageText = `Hi ${client.full_name}, this is a reminder for your ${service?.name ?? "appointment"} with ${staffProfile?.full_name ?? "our team"} on ${when}. Please call us if you need to reschedule.`;
 
-      if (client.email) {
-        attempted = true;
-        try {
-          await sendEmail(client.email, "Appointment Reminder", `<p>${messageText}</p>`);
-        } catch (e) {
-          errors.push(`email: ${(e as Error).message}`);
-        }
-      }
+      // Email intentionally disabled for now — see sendEmail() above.
+      // if (client.email) {
+      //   attempted = true;
+      //   try {
+      //     await sendEmail(client.email, "Appointment Reminder", `<p>${messageText}</p>`);
+      //   } catch (e) {
+      //     errors.push(`email: ${(e as Error).message}`);
+      //   }
+      // }
 
       if (client.phone) {
         attempted = true;
