@@ -45,6 +45,12 @@ export default async function ClientDetailPage({
   const initial = client.full_name?.charAt(0)?.toUpperCase() ?? "C";
   const bookingCount = bookings?.length ?? 0;
 
+  const { data: logs } = await supabase
+    .from("treatment_logs")
+    .select("id, notes, created_at, staff:staff_id(full_name), booking:booking_id(start_time, services(name))")
+    .eq("client_id", id)
+    .order("created_at", { ascending: false });
+
   return (
     <div className="mx-auto max-w-5xl p-6 sm:p-8">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -62,6 +68,12 @@ export default async function ClientDetailPage({
             </p>
           </div>
         </div>
+        <Link
+          href={`/dashboard/clients/${client.id}/log/new`}
+          className="rounded border border-gray-300 px-4 py-2 text-sm"
+        >
+          + Add note
+        </Link>
         <Link
           href={`/dashboard/bookings/new?client_id=${client.id}`}
           className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white"
@@ -146,6 +158,38 @@ export default async function ClientDetailPage({
           </div>
         </aside>
       </div>
+
+      <h2 className="text-lg font-medium mb-3">Treatment history</h2>
+      <div className="space-y-4">
+        {logs?.map((log) => {
+          const staff = Array.isArray(log.staff) ? log.staff[0] : log.staff;
+          const booking = Array.isArray(log.booking) ? log.booking[0] : log.booking;
+          const bookingService = booking
+            ? Array.isArray(booking.services)
+              ? booking.services[0]
+              : booking.services
+            : null;
+
+          return (
+            <div key={log.id} className="rounded border border-gray-200 p-4">
+              <div className="flex justify-between text-sm text-gray-500 mb-2">
+                <span>{staff?.full_name}</span>
+                <span>{new Date(log.created_at).toLocaleString()}</span>
+              </div>
+              {booking && (
+                <p className="text-xs text-gray-400 mb-2">
+                  Related to: {bookingService?.name} on {new Date(booking.start_time).toLocaleDateString()}
+                </p>
+              )}
+              {log.notes && <p className="text-sm text-gray-800 whitespace-pre-wrap">{log.notes}</p>}
+            </div>
+          );
+        })}
+      </div>
+
+        {logs?.length === 0 && (
+          <p className="text-gray-500 text-sm py-6 text-center">No treatment notes yet.</p>
+        )}
     </div>
   );
 }
