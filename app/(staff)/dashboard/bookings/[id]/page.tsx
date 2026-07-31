@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CancelBookingForm from "./CancelBookingForm";
 import CompleteBookingButton from "./CompleteBookingButton";
+import { recordPayment } from "./payments-actions";
 
 export default async function BookingDetailPage({
   params,
@@ -15,7 +16,7 @@ export default async function BookingDetailPage({
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, start_time, status, cancellation_reason, cancellation_note, cancelled_at, completed_at, clients(id, full_name, phone), services(name, price), staff_details(profiles(full_name))"
+      "id, start_time, status, cancellation_reason, cancellation_note, cancelled_at, completed_at, clients(id, full_name, phone), services(name, price, deposit_amount), staff_details(profiles(full_name))"
     )
     .eq("id", id)
     .single();
@@ -23,8 +24,21 @@ export default async function BookingDetailPage({
   if (!booking) notFound();
 
   const client = booking.clients as unknown as { id: string; full_name: string; phone: string | null; };
-  const service = booking.services as unknown as { name: string; price: number };
+  const service = booking.services as unknown as { name: string; price: number; deposit_amount: number };
   const staffProfile = (booking.staff_details as unknown as { profiles: { full_name: string } })?.profiles;
+
+  const { data: payments } = await supabase
+    .from("payments")
+    .select("id, amount, method, status, created_at, recorded_by:recorded_by(full_name)")
+    .eq("booking_id", id)
+    .order("created_at", { ascending: false });
+
+  const totalPaid = (payments || [])
+    .filter((p) => p.status === "paid")
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+  const balanceDue = Math.max(service.price - totalPaid, 0);
+  const depositMet = service.deposit_amount > 0 && totalPaid >= service.deposit_amount;
+  const fullyPaid = totalPaid >= service.price;
 
   const isCancelled = booking.status === "cancelled" || booking.status === "no_show";
   const canCancel = booking.status === "pending" || booking.status === "confirmed";
@@ -119,6 +133,99 @@ export default async function BookingDetailPage({
             </div>
           )}
         </aside>
+      </div>
+
+      {/* Payments */}
+      <div className="mt-4 rounded border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-medium text-gray-700">Payments</p>
+          <div className="flex gap-1.5">
+            {fullyPaid ? (
+              <span className="rounded bg-green-50 border border-green-300 px-2 py-0.5 text-xs text-green-700">
+                Fully paid
+              </span>
+            ) : depositMet ? (
+              <span className="rounded bg-blue-50 border border-blue-300 px-2 py-0.5 text-xs text-blue-700">
+                Deposit paid
+              </span>
+            ) : (
+              <span className="rounded bg-amber-50 border border-amber-300 px-2 py-0.5 text-xs text-amber-700">
+                Unpaid
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="text-sm text-gray-600 mb-3">
+          <div className="flex justify-between">
+            <span>Service price</span>
+            <span>₱{service.price}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Total collected</span>
+            <span>₱{totalPaid}</span>
+          </div>
+          <div className="flex justify-between font-medium text-gray-800">
+            <span>Balance due</span>
+            <span>₱{balanceDue}</span>
+          </div>
+        </div>
+
+        {payments && payments.length > 0 && (
+          <ul className="divide-y divide-gray-100 mb-3 text-sm">
+            {payments.map((p) => {
+              const recorder = Array.isArray(p.recorded_by) ? p.recorded_by[0] : p.recorded_by;
+              return (
+                <li key={p.id} className="py-2 flex justify-between">
+                  <div>
+                    <p>
+                      ₱{p.amount} · <span className="capitalize">{p.method.replace("_", " ")}</span>
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {recorder?.full_name} · {new Date(p.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <span className="text-xs text-gray-400 capitalize self-start">{p.status}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {!isCancelled && !fullyPaid && (
+          <form action={recordPayment.bind(null, booking.id)} className="flex gap-2 items-end pt-2 border-t">
+            <div className="flex-1">
+              <label className="block text-xs text-gray-500 mb-1">Amount (₱)</label>
+              <input
+                name="amount"
+                type="number"
+                step="0.01"
+                min="0.01"
+                max={balanceDue}
+                required
+                defaultValue={balanceDue > 0 ? balanceDue : undefined}
+                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs text-gray-500 mb-1">Method</label>
+              <select name="method" className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm">
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="gcash">GCash</option>
+                <option value="bank_transfer">Bank transfer</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <button type="submit" className="rounded bg-black px-3 py-1.5 text-sm text-white">
+              Record
+            </button>
+          </form>
+        )}
+
+        {!isCancelled && fullyPaid && (
+          <p className="text-sm text-gray-400 pt-2 border-t">Nothing left to collect.</p>
+        )}
       </div>
 
       {isCancelled && (
