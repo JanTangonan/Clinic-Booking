@@ -38,3 +38,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 npm install
 
+npm install exceljs pdfkit
+npm install -D @types/pdfkit

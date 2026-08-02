@@ -41,3 +41,34 @@ export async function createClientRecord(formData: FormData) {
   revalidatePath("/dashboard/clients");
   redirect(`/dashboard/clients/${data.id}`);
 }
+
+export async function updateClientRecord(clientId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const full_name = String(formData.get("full_name") || "").trim();
+  const phone = String(formData.get("phone") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+  const notes = String(formData.get("notes") || "").trim();
+
+  if (!full_name) {
+    throw new Error("Full name is required");
+  }
+
+  const { error } = await supabase
+    .from("clients")
+    .update({
+      full_name,
+      phone: phone || null,
+      email: email || null,
+      notes: notes || null,
+    })
+    .eq("id", clientId);
+
+  if (error) {
+    throw new Error(`Could not update client: ${error.message}`);
+  }
+
+  revalidatePath("/dashboard/clients");
+  revalidatePath(`/dashboard/clients/${clientId}`);
+  redirect(`/dashboard/clients/${clientId}`);
+}
