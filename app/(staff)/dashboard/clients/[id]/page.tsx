@@ -69,6 +69,12 @@ export default async function ClientDetailPage({
           </div>
         </div>
         <Link
+            href={`/dashboard/clients/${client.id}/edit`}
+            className="rounded border border-gray-300 px-4 py-2 text-sm"
+          >
+            Edit
+          </Link>
+        <Link
           href={`/dashboard/clients/${client.id}/log/new`}
           className="rounded border border-gray-300 px-4 py-2 text-sm"
         >
