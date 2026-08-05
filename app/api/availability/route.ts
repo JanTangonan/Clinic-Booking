@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   const staffId = searchParams.get("staff_id");
   const serviceId = searchParams.get("service_id");
   const dateStr = searchParams.get("date");
+  const excludeBookingId = searchParams.get("exclude_booking_id");
 
   if (!staffId || !serviceId || !dateStr) {
     return NextResponse.json(
@@ -60,13 +61,19 @@ export async function GET(request: NextRequest) {
   const lunchStart = new Date(`${dateStr}T12:00:00`);
   const lunchEnd = new Date(`${dateStr}T13:00:00`);
 
-  const { data: existing } = await supabase
+  let existingQuery = supabase
     .from("bookings")
     .select("start_time, end_time")
     .eq("staff_id", staffId)
     .gte("start_time", dayStart.toISOString())
     .lt("start_time", dayEnd.toISOString())
     .in("status", ["pending", "confirmed", "completed"]);
+
+  if (excludeBookingId) {
+    existingQuery = existingQuery.neq("id", excludeBookingId);
+  }
+
+  const { data: existing } = await existingQuery;
 
   const busy = (existing || []).map((b) => ({
     start: new Date(b.start_time).getTime(),

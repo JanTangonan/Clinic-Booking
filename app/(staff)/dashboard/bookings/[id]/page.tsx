@@ -257,6 +257,13 @@ export default async function BookingDetailPage({
       {isActionable && (
         <div className="flex items-center gap-4">
           <CompleteBookingButton bookingId={booking.id} />
+          <Link
+            href={`/dashboard/bookings/${booking.id}/reschedule`}
+            className="mt-4 text-sm text-blue-600 underline"
+          >
+            Reschedule
+          </Link>
+          <CancelBookingForm bookingId={booking.id} />
         </div>
       )}
 

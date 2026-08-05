@@ -111,6 +111,7 @@ export async function cancelBooking(input: {
 
   revalidatePath(`/dashboard/bookings/${input.booking_id}`);
   revalidatePath(`/dashboard/clients/${data.client_id}`);
+  revalidatePath("/dashboard/calendar");
 
   return { success: true };
 }
@@ -148,4 +149,68 @@ export async function markBookingCompleted(bookingId: string) {
   revalidatePath("/dashboard/calendar");
 
   return { success: true };
+}
+
+// Moves an EXISTING booking to a new time, rather than cancelling it
+// and creating a new one. This matters because payments and treatment
+// logs are linked to the booking's id — cancel-and-recreate would
+// sever that history from what's actually happening with the client.
+// Same booking id, same linked records, just a new start/end time.
+export async function rescheduleBooking(bookingId: string, newStartTime: string) {
+  const supabase = await createClient();
+
+  const { data: booking, error: fetchErr } = await supabase
+    .from("bookings")
+    .select("client_id, services(duration_minutes)")
+    .eq("id", bookingId)
+    .single();
+
+  if (fetchErr || !booking) {
+    return { error: "Could not load this booking." };
+  }
+
+  const service = Array.isArray(booking.services) ? booking.services[0] : booking.services;
+  const durationMinutes = service?.duration_minutes;
+
+  if (!durationMinutes) {
+    return { error: "Could not determine service duration." };
+  }
+
+  const start = new Date(newStartTime);
+  const end = new Date(start.getTime() + durationMinutes * 60_000);
+
+  const { error } = await supabase
+    .from("bookings")
+    .update({
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+    })
+    .eq("id", bookingId);
+
+  if (error) {
+    // Same exclusion-constraint race as createBooking — the staff
+    // member could get double-booked between the availability check
+    // and this update landing.
+    if (error.code === "23P01") {
+      return { error: "That time slot was just taken by another booking. Please pick a different time." };
+    }
+    return { error: error.message };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  await supabase.from("audit_log").insert({
+    actor_id: user?.id,
+    action: "booking_rescheduled",
+    target_table: "bookings",
+    target_id: bookingId,
+  });
+
+  revalidatePath(`/dashboard/bookings/${bookingId}`);
+  revalidatePath(`/dashboard/clients/${booking.client_id}`);
+  revalidatePath("/dashboard/calendar");
+
+  redirect(`/dashboard/bookings/${bookingId}`);
 }
