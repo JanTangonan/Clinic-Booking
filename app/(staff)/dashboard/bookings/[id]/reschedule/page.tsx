@@ -33,25 +33,55 @@ export default async function ReschedulePage({
   const staffProfile = Array.isArray(staffDetails?.profiles) ? staffDetails.profiles[0] : staffDetails?.profiles;
 
   return (
-    <div className="p-8 max-w-lg">
-      <h1 className="text-2xl font-semibold mb-1">Reschedule booking</h1>
-      <p className="text-gray-500 mb-1">
-        {client?.full_name} — {service?.name} with {staffProfile?.full_name}
-      </p>
-      <p className="text-gray-400 text-sm mb-6">
-        Currently: {new Date(booking.start_time).toLocaleString()}
-      </p>
+    <div className="mx-auto max-w-6xl p-6 sm:p-8">
+      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Reschedule appointment</p>
+        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Choose a new time</h1>
+        <p className="mt-2 text-sm text-slate-600">
+          {client?.full_name} • {service?.name} with {staffProfile?.full_name}
+        </p>
+        <p className="mt-1 text-sm text-slate-500">
+          Current time: {new Date(booking.start_time).toLocaleString()}
+        </p>
+      </div>
 
-      <RescheduleForm
-        bookingId={booking.id}
-        staffId={booking.staff_id}
-        serviceId={booking.service_id}
-        currentStartTime={booking.start_time}
-      />
+      <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
+        <RescheduleForm
+          bookingId={booking.id}
+          staffId={booking.staff_id}
+          serviceId={booking.service_id}
+          currentStartTime={booking.start_time}
+        />
 
-      <Link href={`/dashboard/bookings/${id}`} className="mt-6 inline-block text-sm underline">
-        ← Cancel, keep current time
-      </Link>
+        <aside className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Booking details</h2>
+          <div className="mt-4 space-y-4 text-sm text-slate-700">
+            <div>
+              <p className="font-medium text-slate-900">Client</p>
+              <p>{client?.full_name}</p>
+            </div>
+            <div>
+              <p className="font-medium text-slate-900">Service</p>
+              <p>{service?.name}</p>
+            </div>
+            <div>
+              <p className="font-medium text-slate-900">Staff</p>
+              <p>{staffProfile?.full_name}</p>
+            </div>
+            <div>
+              <p className="font-medium text-slate-900">Current time</p>
+              <p>{new Date(booking.start_time).toLocaleString()}</p>
+            </div>
+          </div>
+
+          <Link
+            href={`/dashboard/bookings/${id}`}
+            className="mt-6 inline-flex text-sm font-medium text-slate-700 underline underline-offset-4"
+          >
+            Keep current time
+          </Link>
+        </aside>
+      </div>
     </div>
   );
 }
