@@ -87,7 +87,7 @@ export default function CalendarGrid({
   return (
     <div>
       <DateNav date={date} onNavigate={goToDate} />
-
+      
       <div className="mt-6 overflow-x-auto">
         <div
           className="grid border-t border-l"
@@ -181,19 +181,19 @@ function DateNav({ date, onNavigate }: { date: string; onNavigate: (d: string) =
     <div className="flex items-center gap-3">
       <button
         onClick={() => onNavigate(shiftDate(date, -1))}
-        className="rounded border border-gray-300 px-2 py-1 text-sm"
+        className="rounded border border-gray-300 px-2 py-1 text-sm print:hidden"
       >
         ←
       </button>
       <button
         onClick={() => onNavigate(today)}
-        className="rounded border border-gray-300 px-3 py-1 text-sm"
+        className="rounded border border-gray-300 px-3 py-1 text-sm print:hidden"
       >
         Today
       </button>
       <button
         onClick={() => onNavigate(shiftDate(date, 1))}
-        className="rounded border border-gray-300 px-2 py-1 text-sm"
+        className="rounded border border-gray-300 px-2 py-1 text-sm print:hidden"
       >
         →
       </button>
