@@ -29,7 +29,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <nav className="border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur sm:px-6">
+      <nav className="border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur sm:px-6 print:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">

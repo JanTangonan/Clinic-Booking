@@ -29,7 +29,7 @@ export default async function CalendarPage({
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-semibold mb-4">Calendar</h1>
+      <h1 className="text-2xl font-semibold mb-4 print:hidden">Calendar</h1>
       <CalendarGrid date={date} staff={staff || []} bookings={bookings || []} />
     </div>
   );
