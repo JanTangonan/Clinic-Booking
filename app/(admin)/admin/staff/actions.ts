@@ -57,12 +57,9 @@ export async function createStaffAccount(formData: FormData) {
   redirect(`/admin/staff/${authUser.user.id}/edit?created=1&temp_password=${tempPassword}`);
 }
 
-type WorkingHours = Record<string, [string, string] | null>;
-
 export async function updateStaffDetails(input: {
   staffId: string;
   specialties: string[];
-  workingHours: WorkingHours;
   active: boolean;
 }) {
   const supabase = await createClient();
@@ -71,7 +68,6 @@ export async function updateStaffDetails(input: {
     .from("staff_details")
     .update({
       specialties: input.specialties,
-      working_hours: input.workingHours,
       active: input.active,
     })
     .eq("id", input.staffId);

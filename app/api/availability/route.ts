@@ -32,30 +32,28 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
 
-  const [{ data: staff, error: staffErr }, { data: service, error: serviceErr }] =
-    await Promise.all([
-      supabase.from("staff_details").select("working_hours").eq("id", staffId).single(),
-      supabase.from("services").select("duration_minutes").eq("id", serviceId).single(),
-    ]);
+  const [{ data: shift }, { data: service, error: serviceErr }] = await Promise.all([
+    supabase
+      .from("staff_shifts")
+      .select("start_time, end_time")
+      .eq("staff_id", staffId)
+      .eq("shift_date", dateStr)
+      .maybeSingle(),
+    supabase.from("services").select("duration_minutes").eq("id", serviceId).single(),
+  ]);
 
-  if (staffErr || !staff) {
-    return NextResponse.json({ error: "Staff not found" }, { status: 404 });
-  }
   if (serviceErr || !service) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
   }
 
-  const date = new Date(`${dateStr}T00:00:00`);
-  const dayKey = DAY_KEYS[date.getDay()];
-  const hoursForDay = (staff.working_hours as Record<string, [string, string] | null>)?.[dayKey];
-
-  if (!hoursForDay) {
-    return NextResponse.json({ slots: [] }); // staff not working that day
+  // No shift row for this staff member on this date = not scheduled
+  // to work at all, regardless of what day of the week it is.
+  if (!shift) {
+    return NextResponse.json({ slots: [] });
   }
 
-  const [openStr, closeStr] = hoursForDay;
-  const dayStart = new Date(`${dateStr}T${openStr}:00`);
-  const dayEnd = new Date(`${dateStr}T${closeStr}:00`);
+  const dayStart = new Date(`${dateStr}T${shift.start_time}`);
+  const dayEnd = new Date(`${dateStr}T${shift.end_time}`);
   const durationMs = service.duration_minutes * 60_000;
 
   const lunchStart = new Date(`${dateStr}T12:00:00`);
