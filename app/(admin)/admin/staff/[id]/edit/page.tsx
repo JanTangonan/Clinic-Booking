@@ -15,7 +15,7 @@ export default async function EditStaffPage({
 
   const { data: staff } = await supabase
     .from("staff_details")
-    .select("id, active, specialties, working_hours, profiles(full_name, role)")
+    .select("id, active, specialties, profiles(full_name, role)")
     .eq("id", id)
     .single();
 
@@ -47,7 +47,6 @@ export default async function EditStaffPage({
 
       <StaffEditForm
         staffId={staff.id}
-        initialWorkingHours={staff.working_hours || {}}
         initialSpecialties={staff.specialties || []}
         initialActive={staff.active}
       />

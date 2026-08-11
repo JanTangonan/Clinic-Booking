@@ -3,10 +3,11 @@
 import { useRouter } from "next/navigation";
 import { shiftDate, todayInClinicTZ } from "@/lib/date";
 
-type StaffMember = {
-  id: string;
-  working_hours: Record<string, [string, string] | null>;
-  profiles: { full_name: string } | { full_name: string }[] | null;
+type ShiftEntry = {
+  staff_id: string;
+  start_time: string; // "HH:MM:SS"
+  end_time: string;
+  staff_details: { profiles: { full_name: string } | { full_name: string }[] | null } | { profiles: { full_name: string } | { full_name: string }[] | null }[] | null;
 };
 
 type Booking = {
@@ -27,9 +28,14 @@ function singularize<T>(v: T | T[] | null): T | null {
   return Array.isArray(v) ? v[0] ?? null : v;
 }
 
-function toMinutes(hhmm: string) {
-  const [h, m] = hhmm.split(":").map(Number);
+function toMinutes(hms: string) {
+  const [h, m] = hms.split(":").map(Number);
   return h * 60 + m;
+}
+
+function staffName(shift: ShiftEntry) {
+  const details = singularize(shift.staff_details);
+  return singularize(details?.profiles ?? null)?.full_name ?? "Staff";
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -42,37 +48,40 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default function CalendarGrid({
   date,
-  staff,
+  shifts,
   bookings,
 }: {
   date: string;
-  staff: StaffMember[];
+  shifts: ShiftEntry[];
   bookings: Booking[];
 }) {
   const router = useRouter();
-  const dayKey = DAY_KEYS[new Date(`${date}T00:00:00`).getDay()];
-
-  const workingStaff = staff.filter((s) => s.working_hours?.[dayKey]);
 
   function goToDate(newDate: string) {
     router.push(`/dashboard/calendar?date=${newDate}`);
   }
 
-  if (workingStaff.length === 0) {
+  if (shifts.length === 0) {
     return (
       <div>
         <DateNav date={date} onNavigate={goToDate} />
-        <p className="text-gray-500 text-sm mt-6">No staff scheduled to work this day.</p>
+        <p className="text-gray-500 text-sm mt-6">
+          No staff scheduled to work this day.{" "}
+          <a href={`/admin/staff-schedule/${date}`} className="underline">
+            Set the schedule
+          </a>
+          .
+        </p>
       </div>
     );
   }
 
-  // Grid spans the earliest open to the latest close across all staff
-  // working that day, so every staff member's full shift is visible.
-  const opens = workingStaff.map((s) => toMinutes(s.working_hours[dayKey]![0]));
-  const closes = workingStaff.map((s) => toMinutes(s.working_hours[dayKey]![1]));
-  const gridStart = Math.min(...opens);
-  const gridEnd = Math.max(...closes);
+  // Grid spans the earliest shift start to the latest shift end across
+  // everyone working this specific date.
+  const starts = shifts.map((s) => toMinutes(s.start_time));
+  const ends = shifts.map((s) => toMinutes(s.end_time));
+  const gridStart = Math.min(...starts);
+  const gridEnd = Math.max(...ends);
   const totalSlots = Math.ceil((gridEnd - gridStart) / SLOT_MIN);
 
   const timeLabels = Array.from({ length: totalSlots + 1 }, (_, i) => {
@@ -87,21 +96,28 @@ export default function CalendarGrid({
   return (
     <div>
       <DateNav date={date} onNavigate={goToDate} />
-      
+
+      <h2 className="hidden print:block text-lg font-semibold mt-2">
+        {new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+      </h2>
+
       <div className="mt-6 overflow-x-auto">
         <div
           className="grid border-t border-l"
-          style={{ gridTemplateColumns: `80px repeat(${workingStaff.length}, minmax(160px, 1fr))` }}
+          style={{ gridTemplateColumns: `80px repeat(${shifts.length}, minmax(160px, 1fr))` }}
         >
-          {/* Header row */}
-          <div className="border-b border-r bg-gray-50" />
-          {workingStaff.map((s) => (
-            <div key={s.id} className="border-b border-r bg-gray-50 px-2 py-2 text-sm font-medium">
-              {singularize(s.profiles)?.full_name ?? "Staff"}
+          <div className="border-b border-r bg-gray-50 print:bg-white" />
+          {shifts.map((s) => (
+            <div key={s.staff_id} className="border-b border-r bg-gray-50 print:bg-white px-2 py-2 text-sm font-medium">
+              {staffName(s)}
             </div>
           ))}
 
-          {/* Time labels column */}
           <div className="relative border-r" style={{ height: totalSlots * SLOT_PX }}>
             {timeLabels.map((label, i) => (
               <div
@@ -114,29 +130,25 @@ export default function CalendarGrid({
             ))}
           </div>
 
-          {/* Staff columns */}
-          {workingStaff.map((s) => {
-            const [openStr, closeStr] = s.working_hours[dayKey]!;
-            const staffOpen = toMinutes(openStr);
-            const staffClose = toMinutes(closeStr);
-            const staffBookings = bookings.filter((b) => b.staff_id === s.id);
+          {shifts.map((s) => {
+            const staffOpen = toMinutes(s.start_time);
+            const staffClose = toMinutes(s.end_time);
+            const staffBookings = bookings.filter((b) => b.staff_id === s.staff_id);
 
             return (
-              <div key={s.id} className="relative border-r" style={{ height: totalSlots * SLOT_PX }}>
-                {/* Background rows, dimmed outside this staff member's shift */}
+              <div key={s.staff_id} className="relative border-r" style={{ height: totalSlots * SLOT_PX }}>
                 {Array.from({ length: totalSlots }, (_, i) => {
                   const rowStart = gridStart + i * SLOT_MIN;
                   const outsideShift = rowStart < staffOpen || rowStart >= staffClose;
                   return (
                     <div
                       key={i}
-                      className={`absolute w-full border-b ${outsideShift ? "bg-gray-50" : ""}`}
+                      className={`absolute w-full border-b ${outsideShift ? "bg-gray-50 print:bg-white" : ""}`}
                       style={{ top: i * SLOT_PX, height: SLOT_PX }}
                     />
                   );
                 })}
 
-                {/* Booking blocks */}
                 {staffBookings.map((b) => {
                   const start = new Date(b.start_time);
                   const end = new Date(b.end_time);
@@ -152,7 +164,7 @@ export default function CalendarGrid({
                     <button
                       key={b.id}
                       onClick={() => router.push(`/dashboard/bookings/${b.id}`)}
-                      className={`absolute left-1 right-1 rounded border px-2 py-1 text-left text-xs overflow-hidden ${STATUS_STYLE[b.status] ?? "bg-gray-100 border-gray-300"}`}
+                      className={`absolute left-1 right-1 rounded border px-2 py-1 text-left text-xs overflow-hidden print:cursor-default ${STATUS_STYLE[b.status] ?? "bg-gray-100 border-gray-300"}`}
                       style={{ top, height }}
                     >
                       <p className="font-medium truncate">{client?.full_name}</p>
@@ -178,22 +190,22 @@ function DateNav({ date, onNavigate }: { date: string; onNavigate: (d: string) =
   });
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 print:hidden">
       <button
         onClick={() => onNavigate(shiftDate(date, -1))}
-        className="rounded border border-gray-300 px-2 py-1 text-sm print:hidden"
+        className="rounded border border-gray-300 px-2 py-1 text-sm"
       >
         ←
       </button>
       <button
         onClick={() => onNavigate(today)}
-        className="rounded border border-gray-300 px-3 py-1 text-sm print:hidden"
+        className="rounded border border-gray-300 px-3 py-1 text-sm"
       >
         Today
       </button>
       <button
         onClick={() => onNavigate(shiftDate(date, 1))}
-        className="rounded border border-gray-300 px-2 py-1 text-sm print:hidden"
+        className="rounded border border-gray-300 px-2 py-1 text-sm"
       >
         →
       </button>
@@ -204,6 +216,12 @@ function DateNav({ date, onNavigate }: { date: string; onNavigate: (d: string) =
         className="rounded border border-gray-300 px-2 py-1 text-sm"
       />
       <span className="text-gray-500 text-sm ml-2">{displayDate}</span>
+      <button
+        onClick={() => window.print()}
+        className="ml-auto rounded border border-gray-300 px-3 py-1 text-sm"
+      >
+        Print / Save as PDF
+      </button>
     </div>
   );
 }

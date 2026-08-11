@@ -12,10 +12,10 @@ export default async function CalendarPage({
 
   const supabase = await createClient();
 
-  const { data: staff } = await supabase
-    .from("staff_details")
-    .select("id, working_hours, profiles(full_name)")
-    .eq("active", true);
+  const { data: shifts } = await supabase
+    .from("staff_shifts")
+    .select("staff_id, start_time, end_time, staff_details(profiles(full_name))")
+    .eq("shift_date", date);
 
   const dayStartISO = new Date(`${date}T00:00:00`).toISOString();
   const dayEndISO = new Date(new Date(`${date}T00:00:00`).getTime() + 24 * 60 * 60 * 1000).toISOString();
@@ -30,7 +30,7 @@ export default async function CalendarPage({
   return (
     <div className="p-8">
       <h1 className="text-2xl font-semibold mb-4 print:hidden">Calendar</h1>
-      <CalendarGrid date={date} staff={staff || []} bookings={bookings || []} />
+      <CalendarGrid date={date} shifts={shifts || []} bookings={bookings || []} />
     </div>
   );
 }
