@@ -12,15 +12,18 @@ type ShiftRow = {
   staff_details: { profiles: { full_name: string } | { full_name: string }[] | null } | { profiles: { full_name: string } | { full_name: string }[] | null }[] | null;
 };
 
+// Helper function to singularize a value that may be an array or null. If the value is an array, it returns the first element; otherwise, it returns the value itself.
 function singularize<T>(v: T | T[] | null): T | null {
   return Array.isArray(v) ? v[0] ?? null : v;
 }
 
+// Extracts the staff member's name from a shift entry, handling cases where the profiles field may be an array or null.
 function shiftStaffName(s: ShiftRow) {
   const details = singularize(s.staff_details);
   return singularize(details?.profiles ?? null)?.full_name ?? "Staff";
 }
 
+// Converts a time string in "HH:MM:SS" format to a 12-hour format with AM/PM.
 function formatTimeToAmPm(time: string) {
   const [hourStr, minuteStr] = time.split(":");
   let hour = Number(hourStr);
@@ -31,9 +34,10 @@ function formatTimeToAmPm(time: string) {
   return `${hour}:${String(minute).padStart(2, "0")}${period}`;
 }
 
+// Opening and Closing shifts are grouped for display purposes. This function determines which group a shift belongs to based on its start time.
 function getShiftGroup(startTime: string) {
   const [h] = startTime.split(":").map(Number);
-  return h < 12 ? "Morning shifts" : "Afternoon shifts";
+  return h < 11 ? "Opening shifts" : "Closing shifts";
 }
 
 export default async function StaffSchedulePage({
@@ -73,6 +77,7 @@ export default async function StaffSchedulePage({
 
   return (
     <div className="p-8">
+      {/* Month navigation and header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Staff schedule</h1>
         <div className="flex items-center gap-2">
@@ -98,11 +103,13 @@ export default async function StaffSchedulePage({
         </div>
       </div>
 
+      {/* Legend for shift groups */}
       <p className="text-xs text-gray-400 mb-4">
         Click a day to set who&apos;s working and their hours — schedules are set per day now,
         not a repeating weekly pattern.
       </p>
 
+      {/* Grid of days with shifts */}
       <div className="grid grid-cols-7 border-t border-l text-sm">
         {DAY_LABELS.map((label) => (
           <div key={label} className="border-b border-r bg-gray-50 px-2 py-1.5 font-medium text-gray-600">
@@ -129,7 +136,7 @@ export default async function StaffSchedulePage({
               const g = getShiftGroup(s.start_time);
               grouped[g] = [...(grouped[g] || []), s];
             });
-            const groupLabels = ["Morning shifts", "Afternoon shifts"];
+            const groupLabels = ["Opening shifts", "Closing shifts"];
 
             return (
               <Link
