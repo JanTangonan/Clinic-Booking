@@ -19,20 +19,29 @@ export default function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      // Supabase's raw error text is fine for an internal staff tool —
-      // no need to obscure it like you might on a public signup form.
-      setError(error.message);
+    if (error || !data.user) {
+      setError(error?.message ?? "Something went wrong signing in.");
       setLoading(false);
       return;
     }
 
     // Honor the redirectTo param middleware attaches when it bounces
     // an unauthenticated request (e.g. someone hit /dashboard directly).
-    const redirectTo = searchParams.get("redirectTo") || "/dashboard";
-    router.push(redirectTo);
+    const explicitRedirect = searchParams.get("redirectTo");
+    let destination = explicitRedirect;
+
+    if (!destination) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+      destination = profile?.role === "admin" ? "/admin" : "/dashboard";
+    }
+
+    router.push(destination);
     router.refresh(); // forces server components to re-read the new session
   }
 
