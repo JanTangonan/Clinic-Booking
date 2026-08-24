@@ -22,16 +22,16 @@ export default function CompleteBookingButton({ bookingId }: { bookingId: string
   }
 
   return (
-    <div className="mt-4">
+    <div>
       <button
         type="button"
         onClick={handleComplete}
         disabled={isPending}
-        className="rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
       >
         {isPending ? "Saving..." : "Mark as completed"}
       </button>
-      {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
+      {error && <p className="mt-1 text-sm text-rose-600">{error}</p>}
     </div>
   );
 }
