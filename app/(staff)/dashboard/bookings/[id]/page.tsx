@@ -47,14 +47,20 @@ export default async function BookingDetailPage({
   const formattedDate = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", }).format(bookingDate);
 
   const statusLabel = booking.status.replace("_", " ");
-  const statusClasses = isCancelled ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700";
+  const statusClasses = isCancelled
+    ? "border-rose-200 bg-rose-50 text-rose-700"
+    : booking.status === "completed"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : booking.status === "confirmed"
+        ? "border-blue-200 bg-blue-50 text-blue-700"
+        : "border-amber-200 bg-amber-50 text-amber-800";
 
   const isCompleted = booking.status === "completed";
   const isActionable = booking.status === "pending" || booking.status === "confirmed";
 
   return (
-    <div className="mx-auto max-w-4xl p-6 sm:p-8">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="mx-auto max-w-5xl p-4 sm:p-8">
+      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
             Booking details
@@ -66,21 +72,21 @@ export default async function BookingDetailPage({
             Review the appointment details and manage the booking from one place.
           </p>
         </div>
-        <span className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium capitalize ${statusClasses}`}>
+        <span className={`inline-flex w-fit rounded-full border px-3 py-1.5 text-sm font-medium capitalize ${statusClasses}`}>
           {statusLabel}
         </span>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-slate-500">Appointment</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Appointment</p>
               <h2 className="mt-1 text-xl font-semibold text-slate-900">
                 {service?.name ?? "Service"}
               </h2>
             </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+            <div className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white">
               ₱{service?.price?.toLocaleString() ?? "0"}
             </div>
           </div>
@@ -99,7 +105,7 @@ export default async function BookingDetailPage({
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
               <p className="text-sm text-slate-500">When</p>
-              <p className="mt-1 font-medium text-slate-900">{formattedDate}</p>
+              <p className="mt-1 text-base font-semibold text-slate-900">{formattedDate}</p>
             </div>
           </div>
         </section>
@@ -135,57 +141,59 @@ export default async function BookingDetailPage({
         </aside>
       </div>
 
-      {/* Payments */}
-      <div className="mt-4 rounded border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="font-medium text-gray-700">Payments</p>
+      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Payments</p>
+            <p className="mt-1 text-sm text-slate-600">Track deposits and the remaining balance.</p>
+          </div>
           <div className="flex gap-1.5">
             {fullyPaid ? (
-              <span className="rounded bg-green-50 border border-green-300 px-2 py-0.5 text-xs text-green-700">
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
                 Fully paid
               </span>
             ) : depositMet ? (
-              <span className="rounded bg-blue-50 border border-blue-300 px-2 py-0.5 text-xs text-blue-700">
+              <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
                 Deposit paid
               </span>
             ) : (
-              <span className="rounded bg-amber-50 border border-amber-300 px-2 py-0.5 text-xs text-amber-700">
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
                 Unpaid
               </span>
             )}
           </div>
         </div>
 
-        <div className="text-sm text-gray-600 mb-3">
-          <div className="flex justify-between">
+        <div className="mb-4 grid gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600 sm:grid-cols-3">
+          <div>
             <span>Service price</span>
-            <span>₱{service.price}</span>
+            <p className="mt-1 font-semibold text-slate-900">₱{service.price.toLocaleString()}</p>
           </div>
-          <div className="flex justify-between">
+          <div>
             <span>Total collected</span>
-            <span>₱{totalPaid}</span>
+            <p className="mt-1 font-semibold text-slate-900">₱{totalPaid.toLocaleString()}</p>
           </div>
-          <div className="flex justify-between font-medium text-gray-800">
+          <div>
             <span>Balance due</span>
-            <span>₱{balanceDue}</span>
+            <p className="mt-1 font-semibold text-slate-900">₱{balanceDue.toLocaleString()}</p>
           </div>
         </div>
 
         {payments && payments.length > 0 && (
-          <ul className="divide-y divide-gray-100 mb-3 text-sm">
+          <ul className="mb-4 divide-y divide-slate-200 text-sm">
             {payments.map((p) => {
               const recorder = Array.isArray(p.recorded_by) ? p.recorded_by[0] : p.recorded_by;
               return (
-                <li key={p.id} className="py-2 flex justify-between">
+                <li key={p.id} className="flex justify-between gap-4 py-3">
                   <div>
-                    <p>
-                      ₱{p.amount} · <span className="capitalize">{p.method.replace("_", " ")}</span>
+                    <p className="font-medium text-slate-800">
+                      ₱{Number(p.amount).toLocaleString()} · <span className="capitalize">{p.method.replace("_", " ")}</span>
                     </p>
-                    <p className="text-xs text-gray-400">
-                      {recorder?.full_name} · {new Date(p.created_at).toLocaleString()}
+                    <p className="mt-1 text-xs text-slate-500">
+                      {recorder?.full_name || "Staff member"} · {new Date(p.created_at).toLocaleString()}
                     </p>
                   </div>
-                  <span className="text-xs text-gray-400 capitalize self-start">{p.status}</span>
+                  <span className="self-start text-xs capitalize text-slate-500">{p.status}</span>
                 </li>
               );
             })}
@@ -193,9 +201,9 @@ export default async function BookingDetailPage({
         )}
 
         {!isCancelled && !fullyPaid && (
-          <form action={recordPayment.bind(null, booking.id)} className="flex gap-2 items-end pt-2 border-t">
+          <form action={recordPayment.bind(null, booking.id)} className="grid gap-3 border-t border-slate-200 pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">Amount (₱)</label>
+              <label className="mb-1 block text-xs font-medium text-slate-600">Amount (₱)</label>
               <input
                 name="amount"
                 type="number"
@@ -204,12 +212,12 @@ export default async function BookingDetailPage({
                 max={balanceDue}
                 required
                 defaultValue={balanceDue > 0 ? balanceDue : undefined}
-                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-800"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">Method</label>
-              <select name="method" className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm">
+              <label className="mb-1 block text-xs font-medium text-slate-600">Method</label>
+              <select name="method" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-800">
                 <option value="cash">Cash</option>
                 <option value="card">Card</option>
                 <option value="gcash">GCash</option>
@@ -217,16 +225,16 @@ export default async function BookingDetailPage({
                 <option value="other">Other</option>
               </select>
             </div>
-            <button type="submit" className="rounded bg-black px-3 py-1.5 text-sm text-white">
+            <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700">
               Record
             </button>
           </form>
         )}
 
         {!isCancelled && fullyPaid && (
-          <p className="text-sm text-gray-400 pt-2 border-t">Nothing left to collect.</p>
+          <p className="border-t border-slate-200 pt-4 text-sm text-slate-500">Nothing left to collect.</p>
         )}
-      </div>
+      </section>
 
       {isCancelled && (
         <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-900">
@@ -255,15 +263,14 @@ export default async function BookingDetailPage({
       )}
 
       {isActionable && (
-        <div className="flex items-center gap-4">
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <CompleteBookingButton bookingId={booking.id} />
           <Link
             href={`/dashboard/bookings/${booking.id}/reschedule`}
-            className="mt-4 text-sm text-blue-600 underline"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
           >
             Reschedule
           </Link>
-          <CancelBookingForm bookingId={booking.id} />
         </div>
       )}
 
