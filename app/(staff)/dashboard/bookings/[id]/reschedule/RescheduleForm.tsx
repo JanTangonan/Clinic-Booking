@@ -11,12 +11,13 @@ export default function RescheduleForm({
   currentStartTime,
 }: {
   bookingId: string;
-  staffId: string;
+  staffId: string | null;
   serviceId: string;
   currentStartTime: string;
 }) {
   const [date, setDate] = useState(() => currentStartTime.slice(0, 10));
   const [slots, setSlots] = useState<string[]>([]);
+  const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +29,14 @@ export default function RescheduleForm({
     setSelectedSlot(null);
     setError(null);
 
-    fetch(
-      `/api/availability?staff_id=${staffId}&service_id=${serviceId}&date=${date}&exclude_booking_id=${bookingId}`
-    )
+    const staffParam = staffId ? `&staff_id=${staffId}` : "";
+    fetch(`/api/availability?service_id=${serviceId}&date=${date}${staffParam}&exclude_booking_id=${bookingId}`)
       .then((r) => r.json())
       .then((data) => {
-        if (!cancelled) setSlots(data.slots || []);
+        if (!cancelled) {
+          setSlots(data.slots || []);
+          setOccupiedSlots(data.occupiedSlots || []);
+        }
       })
       .catch(() => {
         if (!cancelled) setError("Could not load availability. Try again.");

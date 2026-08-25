@@ -23,14 +23,9 @@ export default async function NewBookingPage({
     );
   }
 
-  const [{ data: client }, { data: services }, { data: staff }] = await Promise.all([
+  const [{ data: client }, { data: services }] = await Promise.all([
     supabase.from("clients").select("id, full_name").eq("id", client_id).single(),
-    supabase
-      .from("services")
-      .select("id, name, duration_minutes, price")
-      .eq("active", true)
-      .order("name"),
-    supabase.from("staff_details").select("id, profiles(full_name)").eq("active", true),
+    supabase.from("services").select("id, name, duration_minutes, price").eq("active", true).order("name"),
   ]);
 
   if (!client) {
@@ -49,18 +44,6 @@ export default async function NewBookingPage({
     );
   }
 
-  if (!staff?.length) {
-    return (
-      <div className="p-8 text-gray-600">
-        No active staff yet.{" "}
-        <a href="/admin/staff" className="underline">
-          Add one in Admin → Staff
-        </a>{" "}
-        before booking.
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-5xl p-6 sm:p-8">
       <div className="mb-6">
@@ -72,7 +55,7 @@ export default async function NewBookingPage({
           Pick a service, staff member, and time slot for {client.full_name}.
         </p>
       </div>
-      <BookingForm clientId={client.id} services={services} staff={staff} />
+      <BookingForm clientId={client.id} services={services} />
     </div>
   );
 }

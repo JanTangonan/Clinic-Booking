@@ -25,12 +25,26 @@ export default async function CalendarPage({
     .select("id, staff_id, start_time, end_time, status, clients(full_name), services(name)")
     .gte("start_time", dayStartISO)
     .lt("start_time", dayEndISO)
+    .not("staff_id", "is", null)
+    .order("start_time");
+
+  const { data: unassignedBookings } = await supabase
+    .from("bookings")
+    .select("id, staff_id, start_time, end_time, status, clients(full_name), services(name)")
+    .gte("start_time", dayStartISO)
+    .lt("start_time", dayEndISO)
+    .is("staff_id", null)
     .order("start_time");
 
   return (
     <div className="p-8">
       <h1 className="text-2xl font-semibold mb-4 print:hidden">Calendar</h1>
-      <CalendarGrid date={date} shifts={shifts || []} bookings={bookings || []} />
+      <CalendarGrid
+        date={date}
+        shifts={shifts || []}
+        bookings={bookings || []}
+        unassignedBookings={unassignedBookings || []}
+      />
     </div>
   );
 }

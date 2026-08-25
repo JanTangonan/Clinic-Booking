@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 type CreateBookingInput = {
   client_id: string;
-  staff_id: string;
+  staff_id: string | null; // null = unassigned, assign later
   service_id: string;
   start_time: string; // ISO
 };
@@ -46,19 +46,46 @@ export async function createBooking(input: CreateBookingInput) {
     .single();
 
   if (error) {
-    // Postgres code 23P01 = exclusion_violation — this fires if someone
-    // else booked the same staff/time between the availability check
-    // and this insert. The UI showed a "free" slot, but the database
-    // is the actual source of truth, so we surface this as a normal
-    // recoverable error rather than a crash.
-    if (error.code === "23P01") {
-      return { error: "That time slot was just taken by another booking. Please pick a different time." };
-    }
     return { error: error.message };
   }
 
   revalidatePath(`/dashboard/clients/${input.client_id}`);
   redirect(`/dashboard/bookings/${data.id}`);
+}
+
+// Assigns (or reassigns, or unassigns via staffId = null) a staff
+// member to an existing reservation. Deliberately allows assigning
+// someone who already has an overlapping booking — no capacity check,
+// per explicit decision that this is trusted to staff/admin judgment.
+export async function assignStaffToBooking(bookingId: string, staffId: string | null) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({ staff_id: staffId })
+    .eq("id", bookingId)
+    .select("client_id")
+    .single();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase.from("audit_log").insert({
+    actor_id: user?.id,
+    action: staffId ? "staff_assigned" : "staff_unassigned",
+    target_table: "bookings",
+    target_id: bookingId,
+  });
+
+  revalidatePath(`/dashboard/bookings/${bookingId}`);
+  revalidatePath(`/dashboard/clients/${data.client_id}`);
+  revalidatePath("/dashboard/calendar");
+
+  return { success: true };
 }
 
 export type CancellationReason =
@@ -116,6 +143,8 @@ export async function cancelBooking(input: {
   return { success: true };
 }
 
+// Marks a booking as completed. This is a separate action from cancellation, 
+// and is used to indicate that the appointment was fulfilled successfully.
 export async function markBookingCompleted(bookingId: string) {
   const supabase = await createClient();
   const {
@@ -188,12 +217,6 @@ export async function rescheduleBooking(bookingId: string, newStartTime: string)
     .eq("id", bookingId);
 
   if (error) {
-    // Same exclusion-constraint race as createBooking — the staff
-    // member could get double-booked between the availability check
-    // and this update landing.
-    if (error.code === "23P01") {
-      return { error: "That time slot was just taken by another booking. Please pick a different time." };
-    }
     return { error: error.message };
   }
 
