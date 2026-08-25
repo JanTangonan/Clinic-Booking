@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CancelBookingForm from "./CancelBookingForm";
 import CompleteBookingButton from "./CompleteBookingButton";
+import StaffAssignmentPanel from "./StaffAssignmentPanel";
 import { recordPayment } from "./payments-actions";
 
 export default async function BookingDetailPage({
@@ -16,7 +17,7 @@ export default async function BookingDetailPage({
   const { data: booking } = await supabase
     .from("bookings")
     .select(
-      "id, start_time, status, cancellation_reason, cancellation_note, cancelled_at, completed_at, clients(id, full_name, phone), services(name, price, deposit_amount), staff_details(profiles(full_name))"
+      "id, start_time, status, staff_id, cancellation_reason, cancellation_note, cancelled_at, completed_at, clients(id, full_name, phone), services(name, price, deposit_amount), staff_details(profiles(full_name))"
     )
     .eq("id", id)
     .single();
@@ -45,6 +46,7 @@ export default async function BookingDetailPage({
 
   const bookingDate = new Date(booking.start_time);
   const formattedDate = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", }).format(bookingDate);
+  const bookingDateStr = booking.start_time.slice(0, 10); // for the staff-on-duty lookup
 
   const statusLabel = booking.status.replace("_", " ");
   const statusClasses = isCancelled
@@ -99,9 +101,16 @@ export default async function BookingDetailPage({
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-sm text-slate-500">Staff</p>
-              <p className="mt-1 font-medium text-slate-900">
-                {staffProfile?.full_name ?? "Unassigned"}
-              </p>
+              {isActionable ? (
+                <StaffAssignmentPanel
+                  bookingId={booking.id}
+                  currentStaffId={booking.staff_id}
+                  currentStaffName={staffProfile?.full_name ?? null}
+                  bookingDate={bookingDateStr}
+                />
+              ) : (
+                <p className="mt-1 font-medium text-slate-900">{staffProfile?.full_name ?? "Unassigned"}</p>
+              )}
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
               <p className="text-sm text-slate-500">When</p>
