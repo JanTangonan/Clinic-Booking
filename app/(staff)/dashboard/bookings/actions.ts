@@ -190,7 +190,7 @@ export async function rescheduleBooking(bookingId: string, newStartTime: string)
 
   const { data: booking, error: fetchErr } = await supabase
     .from("bookings")
-    .select("client_id, services(duration_minutes)")
+    .select("client_id, start_time, services(duration_minutes)")
     .eq("id", bookingId)
     .single();
 
@@ -229,6 +229,7 @@ export async function rescheduleBooking(bookingId: string, newStartTime: string)
     action: "booking_rescheduled",
     target_table: "bookings",
     target_id: bookingId,
+    details: { old_start_time: booking.start_time, new_start_time: start.toISOString() },
   });
 
   revalidatePath(`/dashboard/bookings/${bookingId}`);
