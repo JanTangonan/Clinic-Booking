@@ -30,7 +30,7 @@ export default async function ClientDetailPage({
 
   const { data: client } = await supabase
     .from("clients")
-    .select("id, full_name, phone, email, notes, created_at")
+    .select("id, full_name, phone, email, notes, created_at, privacy_consent, privacy_consent_at, privacy_consent_version, privacy_consent_signature")
     .eq("id", id)
     .single();
 
@@ -119,6 +119,29 @@ export default async function ClientDetailPage({
               <p className="mt-2 text-sm leading-6 text-slate-600">{client.notes}</p>
             </div>
           )}
+
+          {/* Data privacy consent status */}
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm text-sm flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Data privacy agreement</p>
+              {client.privacy_consent ? (
+                <p className="text-green-700 text-xs mt-0.5">
+                  Signed {client.privacy_consent_at && new Date(client.privacy_consent_at).toLocaleString()}
+                  {client.privacy_consent_version && ` · ${client.privacy_consent_version}`}
+                </p>
+              ) : (
+                <p className="text-amber-600 text-xs mt-0.5">Not on file</p>
+              )}
+            </div>
+            {client.privacy_consent && client.privacy_consent_signature && (
+              // eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not a static asset
+              <img
+                src={client.privacy_consent_signature}
+                alt="Client signature"
+                className="h-10 border border-gray-200 rounded bg-white"
+              />
+            )}
+          </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
