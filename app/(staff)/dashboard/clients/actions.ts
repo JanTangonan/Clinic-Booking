@@ -12,10 +12,19 @@ export async function createClientRecord(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
   const notes = String(formData.get("notes") || "").trim();
 
+  const privacyConsent = String(formData.get("privacy_consent") || "") === "true";
+  const privacyConsentSignature = String(formData.get("privacy_consent_signature") || "").trim();
+  const privacyConsentVersion = String(formData.get("privacy_consent_version") || "").trim();
+
+
   if (!full_name) {
     // In a real form you'd surface this back to the client; keeping
     // it simple for now since the input is marked required in the UI.
     throw new Error("Full name is required");
+  }
+
+  if (!privacyConsent || !privacyConsentSignature) {
+    throw new Error("Client must agree to the data privacy agreement and sign before saving.");
   }
 
   const {
@@ -30,6 +39,10 @@ export async function createClientRecord(formData: FormData) {
       email: email || null,
       notes: notes || null,
       created_by: user?.id,
+      privacy_consent: true,
+      privacy_consent_at: new Date().toISOString(),
+      privacy_consent_version: privacyConsentVersion || null,
+      privacy_consent_signature: privacyConsentSignature,
     })
     .select("id")
     .single();
