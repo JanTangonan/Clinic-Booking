@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import BookingForm from "./BookingForm";
 
@@ -46,15 +47,25 @@ export default async function NewBookingPage({
 
   return (
     <div className="mx-auto max-w-5xl p-6 sm:p-8">
-      <div className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-          New appointment
-        </p>
-        <h1 className="text-2xl font-semibold text-slate-900">Create a booking</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Pick a service, staff member, and time slot for {client.full_name}.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+            New appointment
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-900">Create a booking</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Pick a service, staff member, and time slot for {client.full_name}.
+          </p>
+        </div>
+
+        <Link
+          href={`/dashboard/clients/${client.id}`}
+          className="inline-flex items-center text-sm font-medium text-slate-700 underline underline-offset-4"
+        >
+          ← Back to profile
+        </Link>
       </div>
+
       <BookingForm clientId={client.id} services={services} />
     </div>
   );

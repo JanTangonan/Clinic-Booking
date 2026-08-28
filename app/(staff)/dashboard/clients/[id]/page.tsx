@@ -53,42 +53,54 @@ export default async function ClientDetailPage({
 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-8">
-      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-lg font-semibold text-white shadow-sm">
-            {initial}
-          </div>
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Client profile
-            </p>
-            <h1 className="text-2xl font-semibold text-slate-900">{client.full_name}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
-              <span>{client.phone || "No phone number"}</span>
-              {client.phone && client.email && <span className="text-slate-300">|</span>}
-              <span>{client.email || "No email on file"}</span>
+      <div className="mb-8 flex flex-col gap-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-lg font-semibold text-white shadow-sm">
+              {initial}
+            </div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Client profile
+              </p>
+              <h1 className="text-2xl font-semibold text-slate-900">{client.full_name}</h1>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
+                <span>{client.phone || "No phone number"}</span>
+                {client.phone && client.email && <span className="text-slate-300">|</span>}
+                <span>{client.email || "No email on file"}</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <Link
-            href={`/dashboard/clients/${client.id}/edit`}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-          >
-            Edit
-          </Link>
-          <Link
-            href={`/dashboard/clients/${client.id}/log/new`}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-          >
-            Add note
-          </Link>
-          <Link
-            href={`/dashboard/bookings/new?client_id=${client.id}`}
-            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700"
-          >
-            New booking
-          </Link>
+
+          <div className="flex flex-col items-end gap-2">
+            <Link
+              href="/dashboard/clients"
+              className="inline-flex items-center text-sm font-medium text-slate-700 underline underline-offset-4"
+            >
+              ← Back to clients
+            </Link>
+
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <Link
+                href={`/dashboard/clients/${client.id}/edit`}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+              >
+                Edit
+              </Link>
+              <Link
+                href={`/dashboard/clients/${client.id}/log/new`}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+              >
+                Add note
+              </Link>
+              <Link
+                href={`/dashboard/bookings/new?client_id=${client.id}`}
+                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700"
+              >
+                New booking
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 

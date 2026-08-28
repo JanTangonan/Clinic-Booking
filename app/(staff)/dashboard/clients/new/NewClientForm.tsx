@@ -84,7 +84,7 @@ export default function NewClientForm() {
 
       <div className="rounded border border-gray-200 p-4 space-y-3 bg-gray-50">
         <p className="text-sm font-medium text-gray-700">Data privacy agreement</p>
-        <div className="max-h-32 overflow-y-auto rounded border border-gray-200 bg-white p-3 text-xs text-gray-600 whitespace-pre-line">
+        <div className="max-h-40 overflow-y-auto rounded border border-gray-200 bg-white p-3 text-xs text-gray-600 whitespace-pre-line">
           {PRIVACY_CONSENT_TEXT}
         </div>
 
