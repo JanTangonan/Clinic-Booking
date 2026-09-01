@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { updateStaffDetails } from "../../actions";
 
@@ -69,9 +70,9 @@ export default function StaffEditForm({
       <div className="rounded border border-gray-200 bg-gray-50 p-3 text-sm">
         <p className="text-gray-600">
           Working hours are now set per day, not here.{" "}
-          <a href="/admin/staff-schedule" className="underline">
+          <Link href="/admin/staff-schedule" className="underline">
             Go to Staff Schedule
-          </a>{" "}
+          </Link>{" "}
           to set this person&apos;s hours for a specific date.
         </p>
       </div>

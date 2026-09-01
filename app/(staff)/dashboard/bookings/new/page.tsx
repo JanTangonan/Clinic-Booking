@@ -15,9 +15,9 @@ export default async function NewBookingPage({
       <div className="p-8">
         <p className="text-gray-600">
           No client selected.{" "}
-          <a href="/dashboard/clients" className="underline">
+          <Link href="/dashboard/clients" className="underline">
             Pick one from the client list
-          </a>{" "}
+          </Link>{" "}
           first.
         </p>
       </div>
@@ -37,9 +37,9 @@ export default async function NewBookingPage({
     return (
       <div className="p-8 text-gray-600">
         No active services yet.{" "}
-        <a href="/admin/services" className="underline">
+        <Link href="/admin/services" className="underline">
           Add one in Admin → Services
-        </a>{" "}
+        </Link>{" "}
         before booking.
       </div>
     );
