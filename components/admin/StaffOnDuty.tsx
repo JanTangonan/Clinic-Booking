@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface StaffMember {
   name: string;
   startTime: string;
@@ -46,9 +48,9 @@ export function StaffOnDuty({ staff, scheduleUrl }: StaffOnDutyProps) {
       ) : (
         <div className="text-center py-6">
           <p className="text-slate-500 text-sm mb-3">Nobody scheduled today.</p>
-          <a href={scheduleUrl} className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-            Set today's schedule
-          </a>
+          <Link href={scheduleUrl} className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+            Set today&apos;s schedule
+          </Link>
         </div>
       )}
     </div>

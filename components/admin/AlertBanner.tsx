@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface AlertBannerProps {
   type: "warning" | "error" | "info" | "success";
   title: string;
@@ -32,9 +34,9 @@ export function AlertBanner({ type, title, description, action }: AlertBannerPro
           {description && <p className="text-sm mt-1 opacity-90">{description}</p>}
         </div>
         {action && (
-          <a href={action.href} className="ml-2 px-3 py-1 text-sm font-medium hover:underline flex-shrink-0">
+          <Link href={action.href} className="ml-2 px-3 py-1 text-sm font-medium hover:underline flex-shrink-0">
             {action.label} →
-          </a>
+          </Link>
         )}
       </div>
     </div>

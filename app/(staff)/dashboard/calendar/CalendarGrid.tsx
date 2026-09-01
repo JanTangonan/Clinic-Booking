@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { shiftDate, todayInClinicTZ } from "@/lib/date";
 
@@ -158,9 +159,9 @@ export default function CalendarGrid({
         <DateNav date={date} onNavigate={goToDate} />
         <p className="text-gray-500 text-sm mt-6">
           No staff scheduled to work this day.{" "}
-          <a href={`/admin/staff-schedule/${date}`} className="underline">
+          <Link href={`/admin/staff-schedule/${date}`} className="underline">
             Set the schedule
-          </a>
+          </Link>
           .
         </p>
       </div>
